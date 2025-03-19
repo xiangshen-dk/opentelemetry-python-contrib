@@ -1,0 +1,76 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: langgraph-chatbot-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: langgraph-chatbot-demo
+  template:
+    metadata:
+      labels:
+        app: langgraph-chatbot-demo
+    spec:
+      containers:
+      - name: langgraph-chatbot-demo
+        #image: ${CONTAINER_IMAGE_URL}
+        image: us-central1-docker.pkg.dev/shenxiang-gcp-solutions-demo2/langgraph-chatbot-demo/langgraph-demo:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8501
+        env:
+        - name: OTEL_SERVICE_NAME
+          value: "opentelemetry-collector"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://$(OTEL_SERVICE_NAME).ml-team.svc.cluster.local:4317"
+        - name: OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED
+          value: "true"
+        - name: OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT
+          value: "true"
+        - name: OTEL_LOGS_EXPORTER 
+          value: "gcp_logging"
+            #value: "console"
+        - name: OTEL_TRACES_EXPORTER
+          #value: "otlp_google_auth"
+          value: "otlp"
+        - name: OTEL_METRICS_EXPORTER
+          value: "otlp"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "gcp.project_id=shenxiang-gcp-solutions-demo2"
+        resources:
+          requests:
+            cpu: "2"
+            memory: "25Gi"
+            ephemeral-storage: "25Gi"
+          limits:
+            cpu: "2"
+            memory: "25Gi"
+            ephemeral-storage: "25Gi"      
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: langgraph-chatbot-demo
+spec:
+  selector:
+    app: langgraph-chatbot-demo
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8501 
+  type: LoadBalancer 

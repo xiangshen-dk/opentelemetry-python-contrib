@@ -1,6 +1,6 @@
 """Adapted from https://github.com/langchain-ai/streamlit-agent/blob/main/streamlit_agent/basic_memory.py"""
 
-import sqlite3
+# import sqlite3
 import tempfile
 import pathlib
 from os import environ
@@ -27,6 +27,8 @@ from opentelemetry import trace
 from opentelemetry.trace.span import format_trace_id
 
 from google.cloud import storage
+from google.cloud.alloydb.connector import Connector, IPTypes
+
 
 _ = """
 Ideas for things to add:
@@ -98,26 +100,46 @@ def search(query: str):
 system_prompt = SystemMessage(
     content=f"""\
 You are a careful and helpful AI assistant with a mastery of database design and querying. You
-have access to an ephemeral sqlite3 database that you can query and modify through some tools.
+have access to a PostgreSQL database that you can query and modify through some tools.
 Help answer questions and perform actions. Follow these rules:
 
 - Make sure you always use sql_db_query_checker to validate SQL statements **before** running
   them! In pseudocode: `checked_query = sql_db_query_checker(query);
   sql_db_query(checked_query)`.
-- The sqlite version is {sqlite3.sqlite_version} which supports multiple row inserts.
+- The PostgreSQL version is 15 which supports multiple row inserts.
 - Always prefer to insert multiple rows in a single call to the sql_db_query tool, if possible.
 - You may request to execute multiple sql_db_query tool calls which will be run in parallel.
 
 If you make a mistake, try to recover."""
 )
 
+# initialize Connector object
+connector = Connector()
+
+# function to return the database connection
+def getconn():
+    conn = connector.connect(
+        instance_uri="projects/shenxiang-gcp-solutions-demo2/locations/us-central1/clusters/mlp-dev/instances/mlp-dev-primary",
+        driver="pg8000",
+        user="demo",
+        password="demo-password1!",
+        db="langgraph_chatobt_demo",
+        ip_type=IPTypes.PSC,
+        # NOTE: this assumes private IP by default.
+        # Add the following keyword arg to use public IP:
+        # ip_type="PUBLIC"
+    )
+    return conn
 
 @st.cache_resource
 def get_engine(thread_id: str) -> "tuple[str, Engine]":
     # Ephemeral sqlite database per conversation thread
-    _, dbpath = tempfile.mkstemp(suffix=".db")
+    # _, dbpath = tempfile.mkstemp(suffix=".db")
+    dbpath = "langgraph_chatobt_demo"
     return dbpath, create_engine(
-        f"sqlite:///{dbpath}",
+        # f"sqlite:///{dbpath}",
+        url="postgresql+pg8000://",
+        creator=getconn,
         echo=True,
         isolation_level="AUTOCOMMIT",
     )

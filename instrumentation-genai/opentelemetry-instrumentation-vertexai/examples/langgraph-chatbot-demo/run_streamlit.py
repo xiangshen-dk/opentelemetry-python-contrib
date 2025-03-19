@@ -1,6 +1,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
+#  "google-cloud-alloydb-connector>=1.7.0",
 #  "langgraph-chatbot-demo",
 # ]
 #

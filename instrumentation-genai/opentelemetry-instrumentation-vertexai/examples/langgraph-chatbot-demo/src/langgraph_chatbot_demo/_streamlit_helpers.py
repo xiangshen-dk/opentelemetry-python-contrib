@@ -18,8 +18,8 @@ def get_project_id() -> str:
 
 def render_intro() -> None:
     st.markdown("""\
-    This demo allows you to chat with an Agent that has full access to an
-    ephemeral sqlite database. The database is initially empty. It is built with the the LangGraph prebuilt [ReAct
+    This demo allows you to chat with an Agent that has full access to a
+    PostgreSQL database. The database is initially empty. It is built with the the LangGraph prebuilt [ReAct
     Agent](https://langchain-ai.github.io/langgraph/how-tos/create-react-agent/#code) and the
     [SQLDatabaseToolkit](https://python.langchain.com/docs/integrations/tools/sql_database/).
     """)
@@ -48,18 +48,18 @@ def render_db_contents(engine: Engine, dbpath: str) -> None:
     inspector = inspect(engine)
     tables = [
         table
-        for schema in inspector.get_schema_names()
-        for table in inspector.get_table_names(schema=schema)
+        # for schema in inspector.get_schema_names()
+        for table in inspector.get_table_names(schema="public")
     ]
 
     if not tables:
         st.text("Database is empty")
         return
 
-    with open(dbpath, "rb") as file:
-        st.download_button(
-            "Download SQLite DB", data=file, file_name="demo.sqlite3"
-        )
+    # with open(dbpath, "rb") as file:
+    #     st.download_button(
+    #         "Download DB", data=file, file_name="demo.sqlite3"
+    #     )
 
     for table in tables:
         with engine.connect() as conn:
